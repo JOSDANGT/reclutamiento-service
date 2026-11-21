@@ -8,6 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules\Password;
 use Illuminate\Validation\ValidationException;
@@ -39,15 +40,20 @@ class AuthController extends Controller
 
 
         try {
-            DB::beginTransaction();
+            $user = DB::transaction(function () use ($data) {
+                $data['estado'] = true;
 
-            $data['estado'] = true;
+                $data['usuario_dominio'] = $this->generarUsuarioDominio(
+                    $data['primer_nombre'],
+                    $data['primer_apellido']
+                );
 
-            $user = User::create($data);
+                $user = User::create($data);
 
-            $user->assignRole('CANDIDATO');
+                $user->assignRole('CANDIDATO');
 
-            DB::commit();
+                return $user;
+            });
 
 
             $token = $user->createToken(
@@ -68,13 +74,10 @@ class AuthController extends Controller
                 ],
             ], 201);
 
-        } catch (\Exception $e) {
-            DB::rollBack();
-
+        } catch (\Throwable $exception) {
             return response()->json([
                 'success' => false,
-                'message' => 'Error al registrar el usuario.',
-                'data' => null,
+                'message' => $exception->getMessage(),
             ], 500);
         }
     }
@@ -159,5 +162,36 @@ class AuthController extends Controller
             'success' => true,
             'message' => 'Sesión cerrada correctamente.',
         ]);
+    }
+
+    private function generarUsuarioDominio(
+        string $primerNombre,
+        string $primerApellido
+    ): string {
+        $nombre = preg_replace(
+            '/[^a-z0-9]/',
+            '',
+            strtolower(Str::ascii($primerNombre))
+        );
+
+        $apellido = preg_replace(
+            '/[^a-z0-9]/',
+            '',
+            strtolower(Str::ascii($primerApellido))
+        );
+
+        $base = $nombre . $apellido;
+
+        $usuario = $base;
+        $consecutivo = 2;
+
+        while (
+        User::where('usuario_dominio', $usuario)->exists()
+        ) {
+            $usuario = $base . $consecutivo;
+            $consecutivo++;
+        }
+
+        return $usuario;
     }
 }
