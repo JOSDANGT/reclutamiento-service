@@ -1,13 +1,13 @@
 <?php
 
-use App\Http\Controllers\Api\CandidatoController;
-use App\Http\Controllers\Api\CandidatoHabilidadController;
-use App\Http\Controllers\Api\ExperienciaLaboralController;
-use App\Http\Controllers\Api\FormacionAcademicaController;
+use App\Http\Controllers\Api\auth\CandidatoController;
+use App\Http\Controllers\Api\auth\CandidatoHabilidadController;
+use App\Http\Controllers\Api\auth\ExperienciaLaboralController;
+use App\Http\Controllers\Api\auth\FormacionAcademicaController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Api\VacanteController;
-use App\Http\Controllers\Api\RequisitoController;
-use App\Http\Controllers\Api\TipoRequisitoController;
+use App\Http\Controllers\Api\auth\VacanteController;
+use App\Http\Controllers\Api\auth\RequisitoController;
+use App\Http\Controllers\Api\auth\TipoRequisitoController;
 
 /*
 |--------------------------------------------------------------------------
