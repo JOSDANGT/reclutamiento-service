@@ -1,0 +1,65 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+
+class Vacante extends Model
+{
+    use HasFactory, SoftDeletes;
+
+    protected $connection = 'sqlsrv';
+
+    protected $table = 'dbreclutamiento.vacantes';
+
+    protected $fillable = [
+        'titulo',
+        'descripcion',
+        'cantidad_plazas',
+        'salario_minimo',
+        'salario_maximo',
+        'modalidad',
+        'tipo_contrato',
+        'nivel_experiencia',
+        'estado',
+        'fecha_inicio',
+        'fecha_limite',
+        'creado_por',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'cantidad_plazas' => 'integer',
+            'salario_minimo' => 'decimal:2',
+            'salario_maximo' => 'decimal:2',
+            'fecha_inicio' => 'date',
+            'fecha_limite' => 'date',
+            'creado_por' => 'integer',
+        ];
+    }
+
+    public function requisitos(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Requisito::class,
+            'dbreclutamiento.vacantes_has_requisitos',
+            'vacante_id',
+            'requisito_id'
+        )
+            ->withPivot(['id', 'obligatorio', 'orden'])
+            ->withTimestamps();
+    }
+
+    public function bitacoras(): HasMany
+    {
+        return $this->hasMany(
+            VacanteBitacora::class,
+            'vacante_id'
+        );
+    }
+}
