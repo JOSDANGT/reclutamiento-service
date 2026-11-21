@@ -81,12 +81,18 @@ class AuthController extends Controller
 
     public function login(Request $request): JsonResponse
     {
+
         $data = $request->validate([
             'usuario_dominio' => ['required', 'string'],
             'password' => ['required', 'string'],
         ]);
 
-        $user = User::where('usuario_dominio', $data['usuario_dominio'])
+        $user = User::query()
+            ->where(function ($query) use ($data) {
+                $query
+                    ->where('usuario_dominio', $data['usuario_dominio'])
+                    ->orWhere('email', $data['usuario_dominio']);
+            })
             ->where('estado', true)
             ->first();
 
@@ -131,7 +137,14 @@ class AuthController extends Controller
         return response()->json([
             'success' => true,
             'data' => [
-                'user' => $user,
+                'user' => [
+                    'id' => $user->id,
+                    'primer_nombre' => $user->primer_nombre,
+                    'segundo_nombre' => $user->segundo_nombre,
+                    'primer_apellido' => $user->primer_apellido,
+                    'segundo_apellido' => $user->segundo_apellido,
+                    'email' => $user->email,
+                ],
                 'roles' => $user->getRoleNames(),
                 'permisos' => $user->getAllPermissions()->pluck('name'),
             ],
