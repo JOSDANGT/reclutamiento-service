@@ -14,6 +14,16 @@ class HabilidadCategoria extends Model
     protected $connection = 'sqlsrv';
     protected $table = 'dbreclutamiento.habilidad_categorias';
 
+    const DESARROLLO_BACKEND = 1;
+    const DESARROLLO_FRONTEND = 2;
+    const BASES_DE_DATOS = 3;
+    const DEVOPS_E_INFRAESTRUCTURA = 4;
+    const CIBERSEGURIDAD = 5;
+    const ANALISIS_DE_DATOS = 6;
+    const GESTION_PROYECTOS = 7;
+    const HABILIDADES_BLANDAS = 8;
+
+
     protected $fillable = [
         'nombre',
         'descripcion',

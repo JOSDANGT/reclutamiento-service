@@ -11,37 +11,37 @@ class HabilidadesSeeder extends Seeder
     public function run(): void
     {
         $habilidades = [
-            'Desarrollo Backend' => [
+            HabilidadCategoria::DESARROLLO_BACKEND => [
                 'PHP', 'Laravel', 'Java', 'C#', 'Node.js', 'Python',
             ],
-            'Desarrollo Frontend' => [
+            HabilidadCategoria::DESARROLLO_FRONTEND => [
                 'HTML', 'CSS', 'JavaScript', 'Vue.js', 'React', 'Nuxt',
             ],
-            'Bases de Datos' => [
+            HabilidadCategoria::BASES_DE_DATOS => [
                 'SQL Server', 'MySQL', 'PostgreSQL', 'MongoDB',
             ],
-            'DevOps e Infraestructura' => [
+            HabilidadCategoria::DEVOPS_E_INFRAESTRUCTURA => [
                 'Docker', 'Git', 'CI/CD', 'Linux', 'Azure',
             ],
-            'Ciberseguridad' => [
+            HabilidadCategoria::CIBERSEGURIDAD => [
                 'OWASP', 'Seguridad de APIs', 'Zero Trust',
             ],
-            'Análisis de Datos' => [
+            HabilidadCategoria::ANALISIS_DE_DATOS => [
                 'Power BI', 'Excel', 'Análisis estadístico',
             ],
-            'Gestión de Proyectos' => [
+            HabilidadCategoria::GESTION_PROYECTOS => [
                 'Scrum', 'Kanban', 'Planificación de proyectos',
             ],
-            'Habilidades Blandas' => [
+            HabilidadCategoria::HABILIDADES_BLANDAS => [
                 'Comunicación efectiva', 'Liderazgo',
                 'Trabajo en equipo', 'Resolución de problemas',
             ],
         ];
 
-        foreach ($habilidades as $nombreCategoria => $nombres) {
+        foreach ($habilidades as $categorias => $nombres) {
             $categoria = HabilidadCategoria::where(
-                'nombre',
-                $nombreCategoria
+                'id',
+                $categorias
             )->firstOrFail();
 
             foreach ($nombres as $nombre) {
