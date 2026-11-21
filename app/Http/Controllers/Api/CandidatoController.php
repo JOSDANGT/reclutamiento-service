@@ -15,9 +15,7 @@ class CandidatoController extends Controller
         private readonly CandidatoService $candidatoService
     ) {}
 
-    public function store(
-        StoreCandidatoRequest $request
-    ): JsonResponse {
+    public function store(StoreCandidatoRequest $request): JsonResponse {
         $usuarioId = (int) $request->attributes->get(
             'identity_user_id'
         );

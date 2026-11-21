@@ -27,7 +27,7 @@ class AuthController extends Controller
                 'required',
                 'email',
                 'max:150',
-                Rule::unique('sqlsrv.dbidentity.users', 'email'),
+                Rule::unique(User::class, 'email'),
             ],
             'telefono' => ['nullable', 'string', 'max:25'],
             'password' => [
@@ -37,34 +37,46 @@ class AuthController extends Controller
             ],
         ]);
 
-        $user = DB::connection('sqlsrv')->transaction(function () use ($data) {
+
+        try {
+            DB::beginTransaction();
+
             $data['estado'] = true;
 
             $user = User::create($data);
 
-            // El registro público solo permite el rol CANDIDATO.
             $user->assignRole('CANDIDATO');
 
-            return $user;
-        });
+            DB::commit();
 
-        $token = $user->createToken(
-            'talenthub',
-            ['*'],
-            now()->addHours(8)
-        )->plainTextToken;
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Usuario registrado correctamente.',
-            'data' => [
-                'user' => $user,
-                'roles' => $user->getRoleNames(),
-                'permisos' => $user->getAllPermissions()->pluck('name'),
-                'token' => $token,
-                'token_type' => 'Bearer',
-            ],
-        ], 201);
+            $token = $user->createToken(
+                'talenthub',
+                ['*'],
+                now()->addHours(8)
+            )->plainTextToken;
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Usuario registrado correctamente.',
+                'data' => [
+                    'user' => $user,
+                    'roles' => $user->getRoleNames(),
+                    'permisos' => $user->getAllPermissions()->pluck('name'),
+                    'token' => $token,
+                    'token_type' => 'Bearer',
+                ],
+            ], 201);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Error al registrar el usuario.',
+                'data' => null,
+            ], 500);
+        }
     }
 
     public function login(Request $request): JsonResponse
