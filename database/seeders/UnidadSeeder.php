@@ -12,59 +12,75 @@ class UnidadSeeder extends Seeder
         $unidades = [
             [
                 'nombre' => 'Tecnología de la Información',
-                'descripcion' => 'Desarrollo de sistemas, infraestructura tecnológica, soporte técnico y seguridad informática.',
+                'descripcion' => 'Desarrollo y mantenimiento de sistemas, infraestructura, bases de datos, soporte técnico y seguridad informática.',
             ],
             [
                 'nombre' => 'Recursos Humanos',
-                'descripcion' => 'Reclutamiento, selección, capacitación y administración del talento humano.',
+                'descripcion' => 'Reclutamiento, selección, contratación, capacitación, administración y desarrollo del talento humano.',
             ],
             [
                 'nombre' => 'Créditos',
-                'descripcion' => 'Evaluación, análisis, aprobación y seguimiento de solicitudes de crédito.',
+                'descripcion' => 'Recepción, análisis, verificación, evaluación, asignación y seguimiento de solicitudes de crédito.',
+            ],
+            [
+                'nombre' => 'Formalización Crediticia',
+                'descripcion' => 'Formalización de créditos, preparación y control de documentos, escrituración, garantías y coordinación de desembolsos.',
             ],
             [
                 'nombre' => 'Operaciones',
-                'descripcion' => 'Gestión y supervisión de las operaciones de la cooperativa.',
+                'descripcion' => 'Ejecución y supervisión de operaciones financieras, procesamiento de transacciones y gestión operativa de tarjetas.',
             ],
             [
                 'nombre' => 'Contabilidad',
-                'descripcion' => 'Registro contable, conciliaciones y elaboración de estados financieros.',
+                'descripcion' => 'Registros contables, conciliaciones, control de pagos, obligaciones financieras y elaboración de estados financieros.',
             ],
             [
                 'nombre' => 'Finanzas',
-                'descripcion' => 'Administración de recursos financieros, presupuestos y planificación financiera.',
+                'descripcion' => 'Administración de recursos financieros, tesorería, flujo de efectivo, presupuestos y planificación financiera.',
             ],
             [
                 'nombre' => 'Auditoría Interna',
-                'descripcion' => 'Evaluación de controles internos, procesos y cumplimiento institucional.',
+                'descripcion' => 'Evaluación independiente del control interno, revisión de procesos, auditorías y seguimiento de hallazgos.',
             ],
             [
                 'nombre' => 'Cumplimiento',
-                'descripcion' => 'Prevención de lavado de dinero, gestión de riesgos normativos y cumplimiento regulatorio.',
+                'descripcion' => 'Prevención de lavado de dinero y financiamiento del terrorismo, debida diligencia, controles PEP/CPE y cumplimiento normativo.',
             ],
             [
                 'nombre' => 'Jurídico',
-                'descripcion' => 'Asesoría legal, formalización de contratos y gestión de asuntos jurídicos.',
+                'descripcion' => 'Asesoría legal, revisión y elaboración de contratos, documentación jurídica, garantías y trámites legales.',
             ],
             [
                 'nombre' => 'Mercadeo',
-                'descripcion' => 'Promoción de productos, comunicación institucional y estrategias comerciales.',
+                'descripcion' => 'Promoción de productos y servicios, campañas comerciales, comunicación institucional y posicionamiento de marca.',
             ],
             [
                 'nombre' => 'Servicio al Asociado',
-                'descripcion' => 'Atención de consultas, solicitudes y seguimiento de asociados.',
+                'descripcion' => 'Atención de consultas, gestión de solicitudes, orientación, actualización de información y seguimiento a asociados.',
             ],
             [
                 'nombre' => 'Agencias',
-                'descripcion' => 'Administración y coordinación de las agencias de la cooperativa.',
+                'descripcion' => 'Administración, coordinación y supervisión de agencias, personal operativo y servicios financieros presenciales.',
             ],
             [
                 'nombre' => 'Riesgos',
-                'descripcion' => 'Identificación, evaluación y seguimiento de riesgos institucionales.',
+                'descripcion' => 'Identificación, medición, evaluación y seguimiento de riesgos crediticios, operativos y financieros.',
             ],
             [
                 'nombre' => 'Administración',
-                'descripcion' => 'Gestión de recursos materiales, servicios generales y procesos administrativos.',
+                'descripcion' => 'Gestión de recursos materiales, compras, suministros, mantenimiento, instalaciones y servicios generales.',
+            ],
+            [
+                'nombre' => 'Contact Center',
+                'descripcion' => 'Atención telefónica, seguimiento de gestiones, coordinación de citas y comunicación con asociados.',
+            ],
+            [
+                'nombre' => 'Cobros',
+                'descripcion' => 'Gestión de cobranza preventiva y correctiva, recuperación de cartera y seguimiento de obligaciones crediticias.',
+            ],
+            [
+                'nombre' => 'Archivo y Digitalización',
+                'descripcion' => 'Recepción, clasificación, digitalización, custodia y control de expedientes y documentos institucionales.',
             ],
         ];
 

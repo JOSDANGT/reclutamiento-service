@@ -2,9 +2,12 @@
 
 namespace App\Services;
 
+use App\Models\Puesto;
 use App\Models\Vacante;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
+use Throwable;
 
 class VacanteService
 {
@@ -12,7 +15,7 @@ class VacanteService
     {
         $query = Vacante::query()
             ->with([
-                'unidad',
+                'puesto.unidad',
                 'requisitos',
             ])
             ->withCount('requisitos');
@@ -48,59 +51,69 @@ class VacanteService
     public function obtener(Vacante $vacante): Vacante
     {
         return $vacante->load([
-            'unidad',
+            'puesto.unidad',
             'requisitos.tipoRequisito',
-            'bitacoras',
+            'bitacoras.usuario',
         ]);
     }
 
-    public function crear(array $data, ?int $usuarioId = null): Vacante {
-        return DB::connection('sqlsrv')->transaction(
-            function () use ($data, $usuarioId) {
+    public function crear(array $data, ?int $usuarioId = null): Vacante
+    {
+        DB::beginTransaction();
 
-                $requisitos = $data['requisitos'] ?? [];
+        try {
+            $requisitos = $data['requisitos'] ?? [];
 
-                unset($data['requisitos'], $data['creado_por']);
+            unset($data['requisitos'], $data['creado_por']);
 
-                $data['creado_por'] = $usuarioId;
+            $data['creado_por'] = $usuarioId;
 
-                $vacante = Vacante::create($data);
+            $vacante = Vacante::create($data);
 
-                $this->sincronizarRequisitos(
-                    $vacante,
-                    $requisitos
-                );
+            // Asociar requisitos a la vacante.
+            $this->sincronizarRequisitos($vacante, $requisitos);
 
-                $this->registrarBitacora(
-                    $vacante,
-                    'CREACION',
-                    'Se registró la vacante.',
-                    null,
-                    $vacante->fresh()
-                        ->load('requisitos')
-                        ->toArray(),
-                    $usuarioId
-                );
+            // Incorporar los requisitos nuevos a la plantilla del puesto.
+            $this->agregarRequisitosPuesto($vacante, $requisitos);
 
-                return $this->obtener($vacante);
-            }
-        );
+            $this->registrarBitacora(
+                $vacante,
+                'CREACION',
+                'Se registró la vacante.',
+                null,
+                $vacante->fresh()
+                    ->load('requisitos')
+                    ->toArray(),
+                $usuarioId
+            );
+
+            DB::commit();
+
+            return $this->obtener($vacante->fresh());
+
+        } catch (Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
 
+    public function actualizar(
+        Vacante $vacante,
+        array $data,
+        ?int $usuarioId = null
+    ): Vacante {
+        DB::beginTransaction();
 
-    public function actualizar(Vacante $vacante, array $data, ?int $usuarioId = null): Vacante
-    {
-        return DB::connection('sqlsrv')->transaction(function () use ($vacante, $data, $usuarioId) {
-
+        try {
             $actualizarRequisitos = array_key_exists('requisitos', $data);
             $requisitos = $data['requisitos'] ?? [];
 
             unset($data['requisitos'], $data['creado_por']);
 
-            // 1. Asignar los nuevos valores sin guardarlos todavía.
+            // Asignar valores sin guardarlos.
             $vacante->fill($data);
 
-            // 2. Identificar únicamente los campos modificados.
+            // Obtener únicamente los campos modificados.
             $cambios = $vacante->getDirty();
 
             $anteriores = [];
@@ -111,36 +124,29 @@ class VacanteService
                 $nuevos[$campo] = $valorNuevo;
             }
 
-            // 3. Guardar los cambios.
             if (!empty($cambios)) {
                 $vacante->save();
             }
 
-            // 4. Sincronizar requisitos si fueron enviados.
+            // Actualizar requisitos únicamente si se enviaron.
             if ($actualizarRequisitos) {
-                $requisitosAnteriores = $vacante->requisitos()
-                    ->get()
-                    ->map(fn ($requisito) => [
-                        'id' => $requisito->id,
-                        'obligatorio' => (bool) $requisito->pivot->obligatorio,
-                        'orden' => (int) $requisito->pivot->orden,
-                    ])
-                    ->sortBy('id')
-                    ->values()
-                    ->toArray();
+                $requisitosAnteriores = $this->obtenerResumenRequisitos(
+                    $vacante
+                );
 
-                $this->sincronizarRequisitos($vacante, $requisitos);
+                $this->sincronizarRequisitos(
+                    $vacante,
+                    $requisitos
+                );
 
-                $requisitosNuevos = $vacante->requisitos()
-                    ->get()
-                    ->map(fn ($requisito) => [
-                        'id' => $requisito->id,
-                        'obligatorio' => (bool) $requisito->pivot->obligatorio,
-                        'orden' => (int) $requisito->pivot->orden,
-                    ])
-                    ->sortBy('id')
-                    ->values()
-                    ->toArray();
+                $this->agregarRequisitosPuesto(
+                    $vacante,
+                    $requisitos
+                );
+
+                $requisitosNuevos = $this->obtenerResumenRequisitos(
+                    $vacante
+                );
 
                 if ($requisitosAnteriores !== $requisitosNuevos) {
                     $anteriores['requisitos'] = $requisitosAnteriores;
@@ -148,7 +154,7 @@ class VacanteService
                 }
             }
 
-            // 5. Registrar bitácora solo si hubo cambios reales.
+            // Registrar bitácora solo cuando existan cambios reales.
             if (!empty($anteriores) || !empty($nuevos)) {
                 $this->registrarBitacora(
                     $vacante,
@@ -160,69 +166,157 @@ class VacanteService
                 );
             }
 
+            DB::commit();
+
             return $this->obtener($vacante->fresh());
-        });
+
+        } catch (Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
 
+    public function cambiarEstado(
+        Vacante $vacante,
+        string $estado,
+        ?int $usuarioId = null
+    ): Vacante {
+        DB::beginTransaction();
 
-    public function cambiarEstado(Vacante $vacante, string $estado, ?int $usuarioId = null): Vacante {
-        return DB::connection('sqlsrv')->transaction(
-            function () use ($vacante, $estado, $usuarioId) {
+        try {
+            $vacante = Vacante::query()
+                ->lockForUpdate()
+                ->findOrFail($vacante->id);
 
-                $estadoAnterior = $vacante->estado;
+            $estadoAnterior = $vacante->estado;
 
-                $vacante->update([
-                    'estado' => $estado,
+            $transiciones = [
+                'BORRADOR' => 'PUBLICADA',
+                'PUBLICADA' => 'CERRADA',
+            ];
+
+            if (($transiciones[$estadoAnterior] ?? null) !== $estado) {
+                throw ValidationException::withMessages([
+                    'estado' => "No se permite cambiar el estado de {$estadoAnterior} a {$estado}.",
                 ]);
-
-                if ($estadoAnterior !== $estado) {
-                    $this->registrarBitacora(
-                        $vacante,
-                        'CAMBIO_ESTADO',
-                        "Estado actualizado a {$estado}.",
-                        ['estado' => $estadoAnterior],
-                        ['estado' => $estado],
-                        $usuarioId
-                    );
-                }
-
-                return $this->obtener($vacante->fresh());
             }
-        );
+
+            $vacante->update([
+                'estado' => $estado,
+            ]);
+
+            $this->registrarBitacora(
+                $vacante,
+                'CAMBIO_ESTADO',
+                "Estado actualizado a {$estado}.",
+                ['estado' => $estadoAnterior],
+                ['estado' => $estado],
+                $usuarioId
+            );
+
+            DB::commit();
+
+            return $this->obtener($vacante->fresh());
+
+        } catch (Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
 
     public function eliminar(
         Vacante $vacante,
         ?int $usuarioId = null
     ): void {
-        DB::connection('sqlsrv')->transaction(
-            function () use ($vacante, $usuarioId) {
+        DB::beginTransaction();
 
-                $this->registrarBitacora(
-                    $vacante,
-                    'ELIMINACION',
-                    'Se eliminó lógicamente la vacante.',
-                    ['estado' => $vacante->estado],
-                    null,
-                    $usuarioId
-                );
+        try {
+            $this->registrarBitacora(
+                $vacante,
+                'ELIMINACION',
+                'Se eliminó lógicamente la vacante.',
+                ['estado' => $vacante->estado],
+                null,
+                $usuarioId
+            );
 
-                $vacante->delete();
-            }
-        );
+            $vacante->delete();
+
+            DB::commit();
+
+        } catch (Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
     }
 
-    private function sincronizarRequisitos(Vacante $vacante, array $requisitos): void {
+    private function sincronizarRequisitos(
+        Vacante $vacante,
+        array $requisitos
+    ): void {
         $datos = [];
 
         foreach ($requisitos as $requisito) {
             $datos[$requisito['id']] = [
-                'obligatorio' => $requisito['obligatorio'],
-                'orden' => $requisito['orden'],
+                'obligatorio' => (bool) $requisito['obligatorio'],
+                'orden' => (int) $requisito['orden'],
             ];
         }
 
         $vacante->requisitos()->sync($datos);
+    }
+
+    private function agregarRequisitosPuesto(
+        Vacante $vacante,
+        array $requisitos
+    ): void {
+        if (!$vacante->puesto_id || empty($requisitos)) {
+            return;
+        }
+
+        $puesto = Puesto::findOrFail($vacante->puesto_id);
+
+        // Requisitos que ya forman parte de la plantilla del puesto.
+        $existentes = $puesto->requisitos()
+            ->get()
+            ->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        $datos = [];
+
+        foreach ($requisitos as $requisito) {
+            $requisitoId = (int) $requisito['id'];
+
+            // No modificar los requisitos previamente configurados.
+            if (in_array($requisitoId, $existentes, true)) {
+                continue;
+            }
+
+            $datos[$requisitoId] = [
+                'obligatorio' => (bool) $requisito['obligatorio'],
+                'orden' => (int) $requisito['orden'],
+            ];
+        }
+
+        if (!empty($datos)) {
+            $puesto->requisitos()->syncWithoutDetaching($datos);
+        }
+    }
+
+    private function obtenerResumenRequisitos(Vacante $vacante): array
+    {
+        return $vacante->requisitos()
+            ->get()
+            ->map(fn ($requisito) => [
+                'id' => (int) $requisito->id,
+                'nombre' => $requisito->nombre,
+                'obligatorio' => (bool) $requisito->pivot->obligatorio,
+                'orden' => (int) $requisito->pivot->orden,
+            ])
+            ->sortBy('id')
+            ->values()
+            ->toArray();
     }
 
     private function registrarBitacora(

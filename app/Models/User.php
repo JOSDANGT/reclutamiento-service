@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -19,8 +20,13 @@ class User extends Authenticatable
 
     protected $guard_name = 'web';
 
+    protected $appends = [
+        'nombre_completo',
+    ];
+
     protected $fillable = [
         'usuario_dominio',
+        'puesto_id',
         'primer_nombre',
         'segundo_nombre',
         'tercer_nombre',
@@ -58,5 +64,10 @@ class User extends Authenticatable
             $this->segundo_apellido,
             $this->apellido_casada,
         ], fn ($valor) => filled($valor)));
+    }
+
+    public function puesto(): BelongsTo
+    {
+        return $this->belongsTo(Puesto::class, 'puesto_id');
     }
 }

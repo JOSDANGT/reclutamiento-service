@@ -22,11 +22,12 @@ class StoreVacanteRequest extends FormRequest
                 'required', 'integer', 'min:1'
             ],
 
-            'unidad_id' => [
+            'puesto_id' => [
                 'required',
                 'integer',
-                Rule::exists('sqlsrv.dbreclutamiento.unidades', 'id')
-                    ->where('estado', 1),
+                Rule::exists('sqlsrv.dbreclutamiento.puestos', 'id')
+                    ->where('estado', true)
+                    ->whereNull('deleted_at'),
             ],
 
             'salario_minimo' => [
@@ -56,24 +57,14 @@ class StoreVacanteRequest extends FormRequest
             ],
 
             'requisitos' => ['sometimes', 'array'],
-
             'requisitos.*.id' => [
                 'required',
                 'integer',
                 'distinct',
-                Rule::exists(
-                    'sqlsrv.dbreclutamiento.requisitos',
-                    'id'
-                )->where('estado', 1)->whereNull('deleted_at'),
+                Rule::exists('sqlsrv.dbreclutamiento.requisitos', 'id'),
             ],
-
-            'requisitos.*.obligatorio' => [
-                'required', 'boolean'
-            ],
-
-            'requisitos.*.orden' => [
-                'required', 'integer', 'min:0'
-            ],
+            'requisitos.*.obligatorio' => ['required', 'boolean'],
+            'requisitos.*.orden' => ['required', 'integer', 'min:1'],
         ];
     }
 

@@ -13,11 +13,15 @@ class DataInicialSeeder extends Seeder
     public function run(): void
     {
         $this->call([
+            RolesPermisosSeeder::class,
             HabilidadCategoriasSeeder::class,
             HabilidadesSeeder::class,
             NivelHabilidadSeeder::class,
             PostulacionEstadosSeeder::class,
-            RolesPermisosSeeder::class,
+            UnidadSeeder::class,
+            PuestoSeeder::class,
+            TipoRequisitoSeeder::class,
+            SuperAdminSeeder::class,
         ]);
     }
 }

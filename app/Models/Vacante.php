@@ -22,7 +22,7 @@ class Vacante extends Model
         'titulo',
         'descripcion',
         'cantidad_plazas',
-        'unidad_id',
+        'puesto_id',
         'salario_minimo',
         'salario_maximo',
         'modalidad',
@@ -68,8 +68,8 @@ class Vacante extends Model
         );
     }
 
-    public function unidad(): BelongsTo
+    public function puesto(): BelongsTo
     {
-        return $this->belongsTo(Unidad::class, 'unidad_id');
+        return $this->belongsTo(Puesto::class, 'puesto_id');
     }
 }

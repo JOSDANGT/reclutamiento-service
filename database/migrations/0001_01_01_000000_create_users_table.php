@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('usuario_dominio', 100)
                 ->nullable()
                 ->unique();
+            $table->string('puesto', 150)->nullable();
 
             // Información personal
             $table->string('primer_nombre', 100);
