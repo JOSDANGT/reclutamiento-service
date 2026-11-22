@@ -226,6 +226,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('oportunidades/{vacante}', [OportunidadController::class, 'show']
     )->middleware('identity.permission:Ver oportunidades laborales');
 
+    Route::get('candidatos/mi-perfil/postulaciones', [PostulacionController::class, 'misPostulaciones']
+    )->middleware('identity.permission:Ver mis postulaciones');
+
+    Route::put('candidatos/mi-perfil/postulaciones/{postulacion}/retirar', [PostulacionController::class, 'retirar']
+    )->whereNumber('postulacion')
+        ->middleware('identity.permission:Retirar mis postulaciones');
+
 
     Route::prefix('candidatos/mi-perfil/documentos')
         ->group(function () {
