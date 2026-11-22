@@ -14,7 +14,6 @@ class StoreCandidatoRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'usuario_id' => ['required', 'integer', 'exists:dbreclutamiento.users,id'],
             'titulo_profesional' => ['nullable', 'string', 'max:150'],
             'resumen_profesional' => ['nullable', 'string', 'max:5000'],
             'anios_experiencia' => ['nullable', 'integer', 'min:0', 'max:100'],

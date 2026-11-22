@@ -3,6 +3,8 @@
 use App\Http\Controllers\Api\auth\AuthController;
 use App\Http\Controllers\Api\CandidatoController;
 use App\Http\Controllers\Api\CandidatoHabilidadController;
+use App\Http\Controllers\Api\CatalogoHabilidadController;
+use App\Http\Controllers\Api\DocumentoController;
 use App\Http\Controllers\Api\ExperienciaLaboralController;
 use App\Http\Controllers\Api\FormacionAcademicaController;
 use App\Http\Controllers\Api\OportunidadController;
@@ -124,6 +126,12 @@ Route::middleware('auth:sanctum')->group(function () {
             'identity.permission:Gestionar habilidades candidato'
         );
 
+    Route::get('habilidades', [CatalogoHabilidadController::class, 'habilidades'
+    ])->middleware('identity.permission:Ver perfil candidato');
+
+    Route::get('niveles-habilidad', [CatalogoHabilidadController::class, 'niveles'
+    ])->middleware('identity.permission:Ver perfil candidato');
+
     /*
     |--------------------------------------------------------------------------
     | EXPERIENCIAS LABORALES
@@ -213,5 +221,40 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('oportunidades/{vacante}', [OportunidadController::class, 'show']
     )->middleware('identity.permission:Ver oportunidades laborales');
+
+
+    Route::prefix('candidatos/mi-perfil/documentos')
+        ->group(function () {
+
+            Route::get('/', [
+                DocumentoController::class,
+                'index',
+            ])->middleware(
+                'identity.permission:Ver perfil candidato'
+            );
+
+            Route::post('/', [
+                DocumentoController::class,
+                'store',
+            ])->middleware(
+                'identity.permission:Editar perfil candidato'
+            );
+
+            Route::get('{documento}', [
+                DocumentoController::class,
+                'show',
+            ])->whereNumber('documento')
+                ->middleware(
+                    'identity.permission:Ver perfil candidato'
+                );
+
+            Route::delete('{documento}', [
+                DocumentoController::class,
+                'destroy',
+            ])->whereNumber('documento')
+                ->middleware(
+                    'identity.permission:Editar perfil candidato'
+                );
+        });
 
 });
