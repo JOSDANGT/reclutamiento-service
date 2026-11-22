@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\API\AgendaController;
 use App\Http\Controllers\Api\auth\AuthController;
 use App\Http\Controllers\Api\CandidatoController;
 use App\Http\Controllers\Api\CandidatoHabilidadController;
@@ -280,6 +281,56 @@ Route::middleware('auth:sanctum')->group(function () {
                 ->middleware(
                     'identity.permission:Editar perfil candidato'
                 );
+        });
+
+    Route::get('agendas/responsables', [
+        AgendaController::class,
+        'responsables',
+    ])->middleware('identity.permission:Gestionar postulaciones');
+
+    Route::prefix('postulaciones/{postulacion}/agenda')
+        ->whereNumber('postulacion')
+        ->group(function () {
+
+            Route::get('/', [
+                AgendaController::class,
+                'index',
+            ])->middleware('identity.permission:Ver postulaciones');
+
+            Route::middleware('identity.permission:Gestionar postulaciones')
+                ->group(function () {
+
+                    Route::post('/', [
+                        AgendaController::class,
+                        'store',
+                    ]);
+
+                    Route::put('{agenda}/reprogramar', [
+                        AgendaController::class,
+                        'reprogramar',
+                    ])->whereNumber('agenda');
+
+                    Route::put('{agenda}/resultado', [
+                        AgendaController::class,
+                        'registrarResultado',
+                    ])->whereNumber('agenda');
+
+                    Route::put('{agenda}/cancelar', [
+                        AgendaController::class,
+                        'cancelar',
+                    ])->whereNumber('agenda');
+
+                    Route::put('{agenda}/autorizar-continuidad', [
+                        AgendaController::class,
+                        'autorizarContinuidad',
+                    ])->whereNumber('agenda');
+
+                    Route::put('{agenda}/dar-de-baja', [
+                        AgendaController::class,
+                        'darDeBaja',
+                    ])->whereNumber('agenda');
+
+                });
         });
 
 });

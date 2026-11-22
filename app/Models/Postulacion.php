@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Traits\TieneBitacora;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -10,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Postulacion extends Model
 {
-    use HasFactory, SoftDeletes;
+    use TieneBitacora, SoftDeletes;
 
     protected $connection = 'sqlsrv';
 
@@ -98,5 +100,10 @@ class Postulacion extends Model
             'model_type',
             'model_id'
         );
+    }
+
+    public function agendas(): HasMany
+    {
+        return $this->hasMany(Agenda::class, 'postulacion_id');
     }
 }

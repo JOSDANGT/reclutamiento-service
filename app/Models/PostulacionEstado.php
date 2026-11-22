@@ -14,6 +14,15 @@ class PostulacionEstado extends Model
 
     protected $table = 'dbreclutamiento.postulacion_estados';
 
+    const RECIBIDA = 1;
+    const EN_REVISION = 2;
+    const ENTREVISTA = 3;
+    const SELECCIONADA = 4;
+    const RECHAZADA = 5;
+    const RETIRADA = 6;
+    const CONTRATADA = 7;
+
+
     protected $fillable = [
         'nombre',
         'descripcion',
