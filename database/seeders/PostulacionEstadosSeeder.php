@@ -18,6 +18,7 @@ class PostulacionEstadosSeeder extends Seeder
             ['nombre' => 'RECHAZADA', 'orden' => 5],
             ['nombre' => 'RETIRADA', 'orden' => 6],
             ['nombre' => 'CONTRATADA', 'orden' => 7],
+            ['nombre' => 'OFERTA RECHAZADA', 'orden' => 8],
         ];
 
         foreach ($estados as $estado) {

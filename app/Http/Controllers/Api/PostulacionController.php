@@ -9,6 +9,7 @@ use App\Models\Documento;
 use App\Models\Postulacion;
 use App\Models\PostulacionEstado;
 use App\Models\Vacante;
+use App\Services\BitacoraService;
 use App\Services\PostulacionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -346,6 +347,93 @@ class PostulacionController extends Controller
                 'X-Content-Type-Options' => 'nosniff',
             ]
         );
+    }
+
+    public function registrarDecisionOferta(
+        Request $request,
+        Postulacion $postulacion,
+        BitacoraService $bitacoraService
+    ): JsonResponse {
+        $datos = $request->validate([
+            'decision' => ['required', Rule::in(['ACEPTADA', 'RECHAZADA'])],
+            'fecha_ingreso' => [
+                'exclude_unless:decision,ACEPTADA',
+                'required',
+                'date_format:Y-m-d',
+            ],
+            'observaciones' => ['nullable', 'string', 'max:5000'],
+        ]);
+
+        $usuarioId = (int) $request->attributes->get('identity_user_id');
+
+        abort_if($usuarioId < 1, 401, 'No se identificó al usuario.');
+
+        return DB::transaction(function () use ($postulacion, $datos, $usuarioId, $bitacoraService) {
+            $postulacion = Postulacion::query()
+                ->with('estado')
+                ->lockForUpdate()
+                ->findOrFail($postulacion->getKey());
+
+            $estadoAnterior = $postulacion->estado;
+
+            if (mb_strtoupper(trim($estadoAnterior?->nombre ?? '')) !== 'SELECCIONADA') {
+                throw ValidationException::withMessages([
+                    'postulacion' => 'Solo puedes registrar la decisión de oferta de una postulación seleccionada.',
+                ]);
+            }
+
+            $aceptada = $datos['decision'] === 'ACEPTADA';
+            $nombreEstado = $aceptada ? 'CONTRATADA' : 'OFERTA RECHAZADA';
+
+            $estadoFinal = $postulacion->estado()
+                ->getRelated()
+                ->newQuery()
+                ->where('nombre', $nombreEstado)
+                ->first();
+
+            if (!$estadoFinal) {
+                throw ValidationException::withMessages([
+                    'estado' => "El estado {$nombreEstado} aún no existe en el catálogo.",
+                ]);
+            }
+
+            $anteriores = [
+                'estado_id' => $estadoAnterior->getKey(),
+                'estado' => $estadoAnterior->nombre,
+                'fecha_ingreso' => $postulacion->fecha_ingreso,
+            ];
+
+            $postulacion->estado()->associate($estadoFinal);
+            $postulacion->fecha_ingreso = $datos['fecha_ingreso'] ?? null;
+            $postulacion->save();
+
+            $mensaje = $aceptada
+                ? 'Contratación confirmada.'
+                : 'Rechazo de oferta registrado.';
+
+            $bitacoraService->registrar(
+                $postulacion,
+                $aceptada ? 'CONTRATACION_CONFIRMADA' : 'OFERTA RECHAZADA',
+                $mensaje,
+                $anteriores,
+                [
+                    'estado_id' => $estadoFinal->getKey(),
+                    'estado' => $estadoFinal->nombre,
+                    'fecha_ingreso' => $postulacion->fecha_ingreso,
+                    'observaciones' => $datos['observaciones'] ?? null,
+                ],
+                $usuarioId
+            );
+
+            return response()->json([
+                'message' => $mensaje,
+                'data' => [
+                    'postulacion_id' => $postulacion->getKey(),
+                    'estado' => $estadoFinal->nombre,
+                    'fecha_ingreso' => $postulacion->fecha_ingreso,
+                ],
+            ]);
+        });
     }
 
 

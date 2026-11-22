@@ -27,6 +27,7 @@ class Postulacion extends Model
         'observaciones',
         'revisado_por',
         'fecha_revision',
+        'fecha_ingreso',
     ];
 
     protected function casts(): array
@@ -38,6 +39,7 @@ class Postulacion extends Model
             'fecha_postulacion' => 'datetime',
             'fecha_revision' => 'datetime',
             'revisado_por' => 'integer',
+            'fecha_ingreso' => 'datetime',
         ];
     }
 

@@ -76,11 +76,6 @@ class OportunidadController extends Controller
 
     public function show(Vacante $vacante): JsonResponse
     {
-        if ($vacante->estado !== 'PUBLICADA') {
-            return response()->json([
-                'message' => 'La oportunidad laboral no está disponible.',
-            ], 404);
-        }
 
         $vacante->load([
             'puesto.unidad',
