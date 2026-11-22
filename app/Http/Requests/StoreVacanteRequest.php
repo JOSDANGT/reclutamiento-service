@@ -9,8 +9,6 @@ class StoreVacanteRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        // Temporal para pruebas locales.
-        // Proteger con autenticación antes de entregar.
         return true;
     }
 
@@ -22,6 +20,13 @@ class StoreVacanteRequest extends FormRequest
 
             'cantidad_plazas' => [
                 'required', 'integer', 'min:1'
+            ],
+
+            'unidad_id' => [
+                'required',
+                'integer',
+                Rule::exists('sqlsrv.dbreclutamiento.unidades', 'id')
+                    ->where('estado', 1),
             ],
 
             'salario_minimo' => [
@@ -70,5 +75,12 @@ class StoreVacanteRequest extends FormRequest
                 'required', 'integer', 'min:0'
             ],
         ];
+    }
+
+    protected function prepareForValidation(): void
+    {
+        $this->merge([
+            'estado' => 'BORRADOR',
+        ]);
     }
 }

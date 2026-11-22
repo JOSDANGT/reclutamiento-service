@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -57,11 +58,13 @@ class Vacante extends Model
             ->withTimestamps();
     }
 
-    public function bitacoras(): HasMany
+    public function bitacoras(): MorphMany
     {
-        return $this->hasMany(
-            VacanteBitacora::class,
-            'vacante_id'
+        return $this->morphMany(
+            Bitacora::class,
+            'model',
+            'model_type',
+            'model_id'
         );
     }
 

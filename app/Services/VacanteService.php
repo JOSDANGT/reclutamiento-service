@@ -11,7 +11,10 @@ class VacanteService
     public function listar(array $filtros = []): LengthAwarePaginator
     {
         $query = Vacante::query()
-            ->with('requisitos')
+            ->with([
+                'unidad',
+                'requisitos',
+            ])
             ->withCount('requisitos');
 
         if (!empty($filtros['search'])) {
@@ -45,6 +48,7 @@ class VacanteService
     public function obtener(Vacante $vacante): Vacante
     {
         return $vacante->load([
+            'unidad',
             'requisitos.tipoRequisito',
             'bitacoras',
         ]);
@@ -83,35 +87,69 @@ class VacanteService
         );
     }
 
-    public function actualizar(Vacante $vacante, array $data, ?int $usuarioId = null): Vacante {
-        return DB::connection('sqlsrv')->transaction(
-            function () use ($vacante, $data, $usuarioId) {
 
-                $anteriores = $this->obtener($vacante)
+    public function actualizar(Vacante $vacante, array $data, ?int $usuarioId = null): Vacante
+    {
+        return DB::connection('sqlsrv')->transaction(function () use ($vacante, $data, $usuarioId) {
+
+            $actualizarRequisitos = array_key_exists('requisitos', $data);
+            $requisitos = $data['requisitos'] ?? [];
+
+            unset($data['requisitos'], $data['creado_por']);
+
+            // 1. Asignar los nuevos valores sin guardarlos todavía.
+            $vacante->fill($data);
+
+            // 2. Identificar únicamente los campos modificados.
+            $cambios = $vacante->getDirty();
+
+            $anteriores = [];
+            $nuevos = [];
+
+            foreach ($cambios as $campo => $valorNuevo) {
+                $anteriores[$campo] = $vacante->getOriginal($campo);
+                $nuevos[$campo] = $valorNuevo;
+            }
+
+            // 3. Guardar los cambios.
+            if (!empty($cambios)) {
+                $vacante->save();
+            }
+
+            // 4. Sincronizar requisitos si fueron enviados.
+            if ($actualizarRequisitos) {
+                $requisitosAnteriores = $vacante->requisitos()
+                    ->get()
+                    ->map(fn ($requisito) => [
+                        'id' => $requisito->id,
+                        'obligatorio' => (bool) $requisito->pivot->obligatorio,
+                        'orden' => (int) $requisito->pivot->orden,
+                    ])
+                    ->sortBy('id')
+                    ->values()
                     ->toArray();
 
-                $actualizarRequisitos = array_key_exists(
-                    'requisitos',
-                    $data
-                );
+                $this->sincronizarRequisitos($vacante, $requisitos);
 
-                $requisitos = $data['requisitos'] ?? [];
+                $requisitosNuevos = $vacante->requisitos()
+                    ->get()
+                    ->map(fn ($requisito) => [
+                        'id' => $requisito->id,
+                        'obligatorio' => (bool) $requisito->pivot->obligatorio,
+                        'orden' => (int) $requisito->pivot->orden,
+                    ])
+                    ->sortBy('id')
+                    ->values()
+                    ->toArray();
 
-                unset($data['requisitos'], $data['creado_por']);
-
-                $vacante->update($data);
-
-                if ($actualizarRequisitos) {
-                    $this->sincronizarRequisitos(
-                        $vacante,
-                        $requisitos
-                    );
+                if ($requisitosAnteriores !== $requisitosNuevos) {
+                    $anteriores['requisitos'] = $requisitosAnteriores;
+                    $nuevos['requisitos'] = $requisitosNuevos;
                 }
+            }
 
-                $nuevos = $vacante->fresh()
-                    ->load('requisitos')
-                    ->toArray();
-
+            // 5. Registrar bitácora solo si hubo cambios reales.
+            if (!empty($anteriores) || !empty($nuevos)) {
                 $this->registrarBitacora(
                     $vacante,
                     'ACTUALIZACION',
@@ -120,11 +158,12 @@ class VacanteService
                     $nuevos,
                     $usuarioId
                 );
-
-                return $this->obtener($vacante->fresh());
             }
-        );
+
+            return $this->obtener($vacante->fresh());
+        });
     }
+
 
     public function cambiarEstado(Vacante $vacante, string $estado, ?int $usuarioId = null): Vacante {
         return DB::connection('sqlsrv')->transaction(
