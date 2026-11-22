@@ -70,4 +70,9 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Puesto::class, 'puesto_id');
     }
+
+    public function postulaciones()
+    {
+        return $this->hasMany(Postulacion::class, 'candidato_id');
+    }
 }

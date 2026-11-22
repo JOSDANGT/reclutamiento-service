@@ -213,6 +213,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('postulaciones/{postulacion}', [PostulacionController::class, 'show']
     )->middleware('identity.permission:Ver postulaciones');
 
+    Route::get('postulaciones/verificar/{vacante}', [PostulacionController::class, 'verificarPostulacion']
+    )->whereNumber('vacante')
+        ->middleware('identity.permission:Ver oportunidades laborales');
+
     Route::post('postulaciones', [PostulacionController::class, 'store']
     )->middleware('identity.permission:Crear postulaciones');
 

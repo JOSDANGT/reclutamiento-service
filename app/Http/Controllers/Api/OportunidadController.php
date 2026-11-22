@@ -3,9 +3,11 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\Candidato;
 use App\Models\Vacante;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class OportunidadController extends Controller
 {
@@ -16,6 +18,16 @@ class OportunidadController extends Controller
             'page' => ['nullable', 'integer', 'min:1'],
             'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
         ]);
+
+        $usuario = Auth::user();
+
+        $candidato = Candidato::query()
+            ->where('user_id', $usuario->id)
+            ->first();
+
+        $postulacionesUsuario = $candidato
+            ? $candidato->postulaciones()->pluck('vacante_id')->toArray()
+            : [];
 
         $query = Vacante::query()
             ->select([
@@ -46,12 +58,16 @@ class OportunidadController extends Controller
             });
         }
 
-        $perPage = $filtros['per_page'] ?? 9;
-
         $vacantes = $query
             ->orderByDesc('created_at')
             ->orderByDesc('id')
-            ->paginate($perPage);
+            ->paginate($filtros['per_page'] ?? 9);
+
+        $vacantes->getCollection()->transform(function ($vacante) use ($postulacionesUsuario) {
+            $vacante->postulado = in_array($vacante->id, $postulacionesUsuario);
+
+            return $vacante;
+        });
 
         return response()->json([
             'data' => $vacantes,
