@@ -207,11 +207,12 @@ Route::middleware('auth:sanctum')->group(function () {
         [PuestoController::class, 'requisitos']
     );
 
-    Route::get('postulaciones', [PostulacionController::class, 'index']
-    )->middleware('identity.permission:Ver postulaciones');
+    Route::get('postulaciones', [PostulacionController::class, 'index'
+    ])->middleware('identity.permission:Ver postulaciones');
 
-    Route::get('postulaciones/{postulacion}', [PostulacionController::class, 'show']
-    )->middleware('identity.permission:Ver postulaciones');
+    Route::get('postulaciones/{postulacion}', [PostulacionController::class, 'show'])
+        ->whereNumber('postulacion')
+        ->middleware('identity.permission:Ver postulaciones');
 
     Route::get('postulaciones/verificar/{vacante}', [PostulacionController::class, 'verificarPostulacion']
     )->whereNumber('vacante')
@@ -233,6 +234,19 @@ Route::middleware('auth:sanctum')->group(function () {
     )->whereNumber('postulacion')
         ->middleware('identity.permission:Retirar mis postulaciones');
 
+
+    Route::get('postulaciones/estados', [PostulacionController::class, 'estados'
+    ])->middleware('identity.permission:Ver postulaciones');
+
+    Route::put('postulaciones/estado/{postulacion}', [PostulacionController::class, 'cambiarEstado'])
+        ->whereNumber('postulacion')
+        ->middleware('identity.permission:Gestionar postulaciones');
+
+
+    Route::get('postulaciones/{postulacion}/documentos/{documento}', [PostulacionController::class, 'verDocumento'])
+        ->whereNumber('postulacion')
+        ->whereNumber('documento')
+        ->middleware('identity.permission:Ver postulaciones');
 
     Route::prefix('candidatos/mi-perfil/documentos')
         ->group(function () {

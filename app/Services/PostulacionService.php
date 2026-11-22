@@ -47,12 +47,13 @@ class PostulacionService
     public function obtener(Postulacion $postulacion): Postulacion
     {
         return $postulacion->load([
-            'candidato',
+            'candidato.habilidades',
+            'candidato.experienciasLaborales',
+            'candidato.formacionesAcademicas',
+            'candidato.documentos',
             'vacante.puesto.unidad',
-            'vacante.requisitos.tipoRequisito',
+            'vacante.requisitos',
             'estado',
-            'documentos',
-            'bitacoras.usuario',
         ]);
     }
 

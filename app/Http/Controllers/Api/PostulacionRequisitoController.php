@@ -74,10 +74,7 @@ class PostulacionRequisitoController extends Controller
         ]);
     }
 
-    public function guardar(
-        Request $request,
-        Postulacion $postulacion
-    ): JsonResponse {
+    public function guardar(Request $request, Postulacion $postulacion): JsonResponse {
         $data = $request->validate([
             'requisitos' => ['required', 'array', 'min:1'],
             'requisitos.*.id' => ['required', 'integer', 'distinct'],

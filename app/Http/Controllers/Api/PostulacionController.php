@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\StorePostulacionRequest;
 use App\Models\Candidato;
+use App\Models\Documento;
 use App\Models\Postulacion;
 use App\Models\PostulacionEstado;
 use App\Models\Vacante;
@@ -13,7 +14,10 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Throwable;
 
 class PostulacionController extends Controller
@@ -242,6 +246,106 @@ class PostulacionController extends Controller
 
             throw $e;
         }
+    }
+
+
+    public function estados(): JsonResponse
+    {
+        return response()->json([
+            'data' => PostulacionEstado::query()
+                ->select('id', 'nombre')
+                ->orderBy('id')
+                ->get(),
+        ]);
+    }
+
+    public function cambiarEstado(Request $request, Postulacion $postulacion): JsonResponse {
+        $datos = $request->validate([
+            'estado_id' => [
+                'required',
+                'integer',
+                Rule::exists('sqlsrv.dbreclutamiento.postulacion_estados', 'id'),
+            ],
+            'observaciones' => [
+                'nullable',
+                'string',
+                'max:5000',
+            ],
+        ]);
+
+        DB::beginTransaction();
+
+        try {
+            $postulacion = Postulacion::query()
+                ->whereKey($postulacion->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            $estadoAnterior = $postulacion->estado_id;
+
+            if ((int) $estadoAnterior === (int) $datos['estado_id']) {
+                throw ValidationException::withMessages([
+                    'estado_id' => 'La postulación ya tiene ese estado.',
+                ]);
+            }
+
+            $estadoNuevo = PostulacionEstado::findOrFail(
+                $datos['estado_id']
+            );
+
+            if (mb_strtoupper(trim($estadoNuevo->nombre)) === 'RETIRADA') {
+                throw ValidationException::withMessages([
+                    'estado_id' => 'El retiro debe realizarlo el candidato.',
+                ]);
+            }
+
+            $postulacion->update([
+                'estado_id' => $estadoNuevo->id,
+                'observaciones' => $datos['observaciones']
+                    ?? $postulacion->observaciones,
+                'revisado_por' => Auth::id(),
+                'fecha_revision' => now(),
+            ]);
+
+            DB::commit();
+
+            return response()->json([
+                'message' => 'Estado actualizado correctamente.',
+                'data' => $postulacion->fresh([
+                    'estado',
+                    'candidato',
+                    'vacante',
+                ]),
+            ]);
+        } catch (Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
+    }
+
+
+
+    public function verDocumento(Postulacion $postulacion, Documento $documento): BinaryFileResponse {
+        // El documento debe pertenecer al candidato
+        // de la postulación que está revisando RR. HH.
+        $documento = $postulacion->candidato
+            ->documentos()
+            ->findOrFail($documento->id);
+
+        $disco = Storage::disk($documento->disco);
+
+        if (!$disco->exists($documento->ruta)) {
+            abort(404, 'El archivo no está disponible.');
+        }
+
+        return response()->file(
+            $disco->path($documento->ruta),
+            [
+                'Content-Type' => $documento->mime_type
+                    ?: 'application/octet-stream',
+                'X-Content-Type-Options' => 'nosniff',
+            ]
+        );
     }
 
 
