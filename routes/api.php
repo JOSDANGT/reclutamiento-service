@@ -5,6 +5,8 @@ use App\Http\Controllers\Api\CandidatoController;
 use App\Http\Controllers\Api\CandidatoHabilidadController;
 use App\Http\Controllers\Api\ExperienciaLaboralController;
 use App\Http\Controllers\Api\FormacionAcademicaController;
+use App\Http\Controllers\Api\OportunidadController;
+use App\Http\Controllers\Api\PostulacionController;
 use App\Http\Controllers\Api\PostulacionRequisitoController;
 use App\Http\Controllers\Api\PuestoController;
 use App\Http\Controllers\Api\UnidadController;
@@ -196,5 +198,20 @@ Route::middleware('auth:sanctum')->group(function () {
         'puestos/requisitos/{puesto}',
         [PuestoController::class, 'requisitos']
     );
+
+    Route::get('postulaciones', [PostulacionController::class, 'index']
+    )->middleware('identity.permission:Ver postulaciones');
+
+    Route::get('postulaciones/{postulacion}', [PostulacionController::class, 'show']
+    )->middleware('identity.permission:Ver postulaciones');
+
+    Route::post('postulaciones', [PostulacionController::class, 'store']
+    )->middleware('identity.permission:Crear postulaciones');
+
+    Route::get('oportunidades', [OportunidadController::class, 'index']
+    )->middleware('identity.permission:Ver oportunidades laborales');
+
+    Route::get('oportunidades/{vacante}', [OportunidadController::class, 'show']
+    )->middleware('identity.permission:Ver oportunidades laborales');
 
 });

@@ -13,51 +13,76 @@ class RolesPermisosSeeder extends Seeder
     {
         app(PermissionRegistrar::class)->forgetCachedPermissions();
 
-        $permisos = [
-            // Vacantes
+        // Gestión administrativa de vacantes.
+        $permisosVacantes = [
             'Ver vacantes',
             'Crear vacantes',
             'Editar vacantes',
             'Eliminar vacantes',
             'Cambiar estado vacantes',
+        ];
 
-            // Requisitos
+        // Portal de oportunidades laborales.
+        $permisosOportunidades = [
+            'Ver oportunidades laborales',
+        ];
+
+        // Catálogo de requisitos.
+        $permisosRequisitos = [
             'Ver requisitos',
             'Crear requisitos',
             'Editar requisitos',
             'Eliminar requisitos',
+        ];
 
-            // Tipos de requisitos
+        // Catálogo de tipos de requisitos.
+        $permisosTiposRequisitos = [
             'Ver tipos de requisitos',
             'Crear tipos de requisitos',
             'Editar tipos de requisitos',
             'Eliminar tipos de requisitos',
+        ];
 
-            // Postulaciones
+        // Gestión administrativa de postulaciones.
+        $permisosPostulaciones = [
             'Ver postulaciones',
-            'Crear postulaciones',
             'Gestionar postulaciones',
+            'Evaluar requisitos postulaciones',
+        ];
 
-            // Usuarios
+        // Acciones propias del candidato.
+        $permisosMisPostulaciones = [
+            'Crear postulaciones',
+            'Ver mis postulaciones',
+            'Retirar mis postulaciones',
+        ];
+
+        // Administración de usuarios.
+        $permisosUsuarios = [
             'Ver usuarios',
             'Crear usuarios',
             'Editar usuarios',
             'Eliminar usuarios',
+        ];
 
-            // Roles y permisos
+        // Administración de roles y permisos.
+        $permisosRoles = [
             'Ver roles',
             'Crear roles',
             'Editar roles',
             'Eliminar roles',
             'Asignar roles',
             'Asignar permisos',
+        ];
 
-            // Unidades
+        // Unidades organizacionales.
+        $permisosUnidades = [
             'Ver unidades',
             'Crear unidades',
             'Editar unidades',
         ];
 
+        // Perfiles de candidatos.
         $permisosCandidatos = [
             'Crear perfil candidato',
             'Ver perfil candidato',
@@ -65,6 +90,7 @@ class RolesPermisosSeeder extends Seeder
             'Ver candidatos',
         ];
 
+        // Catálogo y gestión de habilidades.
         $permisosHabilidades = [
             'Ver habilidades',
             'Crear habilidades',
@@ -75,74 +101,101 @@ class RolesPermisosSeeder extends Seeder
             'Gestionar habilidades candidato',
         ];
 
+        // Experiencias laborales.
         $permisosExperiencias = [
             'Gestionar experiencias laborales',
         ];
 
+        // Formación académica.
         $permisosFormaciones = [
             'Gestionar formaciones académicas',
         ];
 
-        // Registrar todos los permisos
-        $todosLosPermisos = array_unique(array_merge(
-            $permisos,
+        // Registrar todos los permisos.
+        $todosLosPermisos = array_values(array_unique(array_merge(
+            $permisosVacantes,
+            $permisosOportunidades,
+            $permisosRequisitos,
+            $permisosTiposRequisitos,
+            $permisosPostulaciones,
+            $permisosMisPostulaciones,
+            $permisosUsuarios,
+            $permisosRoles,
+            $permisosUnidades,
             $permisosCandidatos,
             $permisosHabilidades,
             $permisosExperiencias,
             $permisosFormaciones,
-        ));
+        )));
 
         foreach ($todosLosPermisos as $permiso) {
             Permission::findOrCreate($permiso, 'web');
         }
 
-        // Crear roles
+        // Crear roles.
         $admin = Role::findOrCreate('ADMIN', 'web');
         $reclutador = Role::findOrCreate('RECLUTADOR', 'web');
         $candidato = Role::findOrCreate('CANDIDATO', 'web');
 
-        // ADMIN: todos los permisos
+        // ADMIN: acceso a todos los permisos.
         $admin->syncPermissions($todosLosPermisos);
 
-        // RECLUTADOR
+        // RECLUTADOR: administración del reclutamiento.
         $reclutador->syncPermissions([
+            // Vacantes.
             'Ver vacantes',
             'Crear vacantes',
             'Editar vacantes',
             'Cambiar estado vacantes',
 
+            // Oportunidades.
+            'Ver oportunidades laborales',
+
+            // Requisitos.
             'Ver requisitos',
             'Crear requisitos',
             'Editar requisitos',
 
+            // Tipos de requisitos.
             'Ver tipos de requisitos',
             'Crear tipos de requisitos',
             'Editar tipos de requisitos',
 
+            // Postulaciones.
             'Ver postulaciones',
             'Gestionar postulaciones',
+            'Evaluar requisitos postulaciones',
 
+            // Candidatos.
             'Ver candidatos',
+
+            // Habilidades.
             'Ver habilidades',
         ]);
 
-        // CANDIDATO
+        // CANDIDATO: acceso a su portal personal.
         $candidato->syncPermissions([
-            'Ver vacantes',
-            'Ver requisitos',
-            'Ver tipos de requisitos',
+            // Consulta de vacantes publicadas.
+            'Ver oportunidades laborales',
 
+            // Postulaciones propias.
             'Crear postulaciones',
+            'Ver mis postulaciones',
+            'Retirar mis postulaciones',
 
+            // Perfil propio.
             'Crear perfil candidato',
             'Ver perfil candidato',
             'Editar perfil candidato',
 
+            // Habilidades propias.
             'Ver habilidades',
             'Gestionar habilidades candidato',
 
+            // Experiencias laborales.
             'Gestionar experiencias laborales',
 
+            // Formación académica.
             'Gestionar formaciones académicas',
         ]);
 
