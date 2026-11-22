@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -20,6 +21,7 @@ class Vacante extends Model
         'titulo',
         'descripcion',
         'cantidad_plazas',
+        'unidad_id',
         'salario_minimo',
         'salario_maximo',
         'modalidad',
@@ -61,5 +63,10 @@ class Vacante extends Model
             VacanteBitacora::class,
             'vacante_id'
         );
+    }
+
+    public function unidad(): BelongsTo
+    {
+        return $this->belongsTo(Unidad::class, 'unidad_id');
     }
 }

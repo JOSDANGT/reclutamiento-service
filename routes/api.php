@@ -5,22 +5,21 @@ use App\Http\Controllers\Api\CandidatoController;
 use App\Http\Controllers\Api\CandidatoHabilidadController;
 use App\Http\Controllers\Api\ExperienciaLaboralController;
 use App\Http\Controllers\Api\FormacionAcademicaController;
-use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\UnidadController;
 use App\Http\Controllers\Api\VacanteController;
 use App\Http\Controllers\Api\RequisitoController;
 use App\Http\Controllers\Api\TipoRequisitoController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
-| VACANTES
+| AUTENTICACIÓN
 |--------------------------------------------------------------------------
 */
-
 
 Route::prefix('auth')->group(function () {
 
     Route::post('login', [AuthController::class, 'login']);
-
     Route::post('register', [AuthController::class, 'register']);
 
     Route::middleware('auth:sanctum')->group(function () {
@@ -32,33 +31,21 @@ Route::prefix('auth')->group(function () {
 
 Route::middleware('auth:sanctum')->group(function () {
 
+    /*
+    |--------------------------------------------------------------------------
+    | VACANTES
+    |--------------------------------------------------------------------------
+    */
 
-    Route::prefix('vacantes')->group(function () {
+    Route::patch('vacantes/estado/{vacante}', [
+        VacanteController::class, 'cambiarEstado'
+    ])->middleware('identity.permission:Cambiar estado vacantes');
 
-        Route::get('/', [
-            VacanteController::class, 'index'
-        ])->middleware('identity.permission:Ver vacantes');
-
-        Route::get('/{vacante}', [
-            VacanteController::class, 'show'
-        ])->middleware('identity.permission:Ver vacantes');
-
-        Route::post('/', [
-            VacanteController::class, 'store'
-        ])->middleware('identity.permission:Crear vacantes');
-
-        Route::match(['put', 'patch'], '/{vacante}', [
-            VacanteController::class, 'update'
-        ])->middleware('identity.permission:Editar vacantes');
-
-        Route::patch('/{vacante}/estado', [
-            VacanteController::class, 'cambiarEstado'
-        ])->middleware('identity.permission:Cambiar estado vacantes');
-
-        Route::delete('/{vacante}', [
-            VacanteController::class, 'destroy'
-        ])->middleware('identity.permission:Eliminar vacantes');
-    });
+    Route::apiResource('vacantes', VacanteController::class)
+        ->middlewareFor(['index', 'show'], 'identity.permission:Ver vacantes')
+        ->middlewareFor('store', 'identity.permission:Crear vacantes')
+        ->middlewareFor('update', 'identity.permission:Editar vacantes')
+        ->middlewareFor('destroy', 'identity.permission:Eliminar vacantes');
 
     /*
     |--------------------------------------------------------------------------
@@ -66,28 +53,12 @@ Route::middleware('auth:sanctum')->group(function () {
     |--------------------------------------------------------------------------
     */
 
-    Route::prefix('tipos-requisitos')->group(function () {
-
-        Route::get('/', [
-            TipoRequisitoController::class, 'index'
-        ])->middleware('identity.permission:Ver tipos de requisitos');
-
-        Route::get('/{tipoRequisito}', [
-            TipoRequisitoController::class, 'show'
-        ])->middleware('identity.permission:Ver tipos de requisitos');
-
-        Route::post('/', [
-            TipoRequisitoController::class, 'store'
-        ])->middleware('identity.permission:Crear tipos de requisitos');
-
-        Route::match(['put', 'patch'], '/{tipoRequisito}', [
-            TipoRequisitoController::class, 'update'
-        ])->middleware('identity.permission:Editar tipos de requisitos');
-
-        Route::delete('/{tipoRequisito}', [
-            TipoRequisitoController::class, 'destroy'
-        ])->middleware('identity.permission:Eliminar tipos de requisitos');
-    });
+    Route::apiResource('tipos-requisitos', TipoRequisitoController::class)
+        ->parameters(['tipos-requisitos' => 'tipoRequisito'])
+        ->middlewareFor(['index', 'show'], 'identity.permission:Ver tipos de requisitos')
+        ->middlewareFor('store', 'identity.permission:Crear tipos de requisitos')
+        ->middlewareFor('update', 'identity.permission:Editar tipos de requisitos')
+        ->middlewareFor('destroy', 'identity.permission:Eliminar tipos de requisitos');
 
     /*
     |--------------------------------------------------------------------------
@@ -95,28 +66,11 @@ Route::middleware('auth:sanctum')->group(function () {
     |--------------------------------------------------------------------------
     */
 
-    Route::prefix('requisitos')->group(function () {
-
-        Route::get('/', [
-            RequisitoController::class, 'index'
-        ])->middleware('identity.permission:Ver requisitos');
-
-        Route::get('/{requisito}', [
-            RequisitoController::class, 'show'
-        ])->middleware('identity.permission:Ver requisitos');
-
-        Route::post('/', [
-            RequisitoController::class, 'store'
-        ])->middleware('identity.permission:Crear requisitos');
-
-        Route::match(['put', 'patch'], '/{requisito}', [
-            RequisitoController::class, 'update'
-        ])->middleware('identity.permission:Editar requisitos');
-
-        Route::delete('/{requisito}', [
-            RequisitoController::class, 'destroy'
-        ])->middleware('identity.permission:Eliminar requisitos');
-    });
+    Route::apiResource('requisitos', RequisitoController::class)
+        ->middlewareFor(['index', 'show'], 'identity.permission:Ver requisitos')
+        ->middlewareFor('store', 'identity.permission:Crear requisitos')
+        ->middlewareFor('update', 'identity.permission:Editar requisitos')
+        ->middlewareFor('destroy', 'identity.permission:Eliminar requisitos');
 
     /*
     |--------------------------------------------------------------------------
@@ -124,9 +78,9 @@ Route::middleware('auth:sanctum')->group(function () {
     |--------------------------------------------------------------------------
     */
 
+    // Perfil del usuario autenticado
     Route::prefix('candidatos')->group(function () {
 
-        // Perfil del usuario autenticado
         Route::post('perfil', [
             CandidatoController::class, 'store'
         ])->middleware('identity.permission:Crear perfil candidato');
@@ -139,92 +93,83 @@ Route::middleware('auth:sanctum')->group(function () {
             CandidatoController::class, 'update'
         ])->middleware('identity.permission:Editar perfil candidato');
 
-        // Administración de candidatos
-        Route::get('/', [
-            CandidatoController::class, 'index'
-        ])->middleware('identity.permission:Ver candidatos');
-
-        Route::get('{candidato}', [
-            CandidatoController::class, 'show'
-        ])->whereNumber('candidato')
-            ->middleware('identity.permission:Ver candidatos');
-
     });
 
-    Route::prefix('candidatos/mi-perfil/habilidades')->group(function () {
+    // Administración de candidatos
+    Route::apiResource('candidatos', CandidatoController::class)
+        ->only(['index', 'show'])
+        ->where(['candidato' => '[0-9]+'])
+        ->middlewareFor(['index', 'show'], 'identity.permission:Ver candidatos');
 
-        Route::get('/', [
-            CandidatoHabilidadController::class, 'index'
-        ])->middleware('identity.permission:Ver perfil candidato');
+    /*
+    |--------------------------------------------------------------------------
+    | HABILIDADES DEL CANDIDATO
+    |--------------------------------------------------------------------------
+    */
 
-        Route::post('/', [
-            CandidatoHabilidadController::class, 'store'
-        ])->middleware('identity.permission:Gestionar habilidades candidato');
+    Route::apiResource(
+        'candidatos/mi-perfil/habilidades',
+        CandidatoHabilidadController::class
+    )
+        ->only(['index', 'store', 'update', 'destroy'])
+        ->parameters(['habilidades' => 'habilidad'])
+        ->where(['habilidad' => '[0-9]+'])
+        ->middlewareFor('index', 'identity.permission:Ver perfil candidato')
+        ->middlewareFor(
+            ['store', 'update', 'destroy'],
+            'identity.permission:Gestionar habilidades candidato'
+        );
 
-        Route::patch('{habilidad}', [
-            CandidatoHabilidadController::class, 'update'
-        ])->whereNumber('habilidad')
-            ->middleware('identity.permission:Gestionar habilidades candidato');
+    /*
+    |--------------------------------------------------------------------------
+    | EXPERIENCIAS LABORALES
+    |--------------------------------------------------------------------------
+    */
 
-        Route::delete('{habilidad}', [
-            CandidatoHabilidadController::class, 'destroy'
-        ])->whereNumber('habilidad')
-            ->middleware('identity.permission:Gestionar habilidades candidato');
-    });
+    Route::apiResource(
+        'candidatos/mi-perfil/experiencias',
+        ExperienciaLaboralController::class
+    )
+        ->parameters(['experiencias' => 'experiencia'])
+        ->where(['experiencia' => '[0-9]+'])
+        ->middlewareFor(['index', 'show'], 'identity.permission:Ver perfil candidato')
+        ->middlewareFor(
+            ['store', 'update', 'destroy'],
+            'identity.permission:Gestionar experiencias laborales'
+        );
 
+    /*
+    |--------------------------------------------------------------------------
+    | FORMACIONES ACADÉMICAS
+    |--------------------------------------------------------------------------
+    */
 
-    Route::prefix('candidatos/mi-perfil/experiencias')
-        ->group(function () {
+    Route::apiResource(
+        'candidatos/mi-perfil/formaciones',
+        FormacionAcademicaController::class
+    )
+        ->parameters(['formaciones' => 'formacion'])
+        ->where(['formacion' => '[0-9]+'])
+        ->middlewareFor(['index', 'show'], 'identity.permission:Ver perfil candidato')
+        ->middlewareFor(
+            ['store', 'update', 'destroy'],
+            'identity.permission:Gestionar formaciones académicas'
+        );
 
-            Route::get('/', [
-                ExperienciaLaboralController::class, 'index'
-            ])->middleware('identity.permission:Ver perfil candidato');
+    /*
+    |--------------------------------------------------------------------------
+    | UNIDADES
+    |--------------------------------------------------------------------------
+    */
 
-            Route::get('{experiencia}', [
-                ExperienciaLaboralController::class, 'show'
-            ])->whereNumber('experiencia')
-                ->middleware('identity.permission:Ver perfil candidato');
+    Route::patch('unidades/estado/{unidad}', [
+        UnidadController::class, 'cambiarEstado'
+    ])->middleware('identity.permission:Editar unidades');
 
-            Route::post('/', [
-                ExperienciaLaboralController::class, 'store'
-            ])->middleware('identity.permission:Gestionar experiencias laborales');
+    Route::apiResource('unidades', UnidadController::class)
+        ->except(['destroy'])
+        ->middlewareFor(['index', 'show'], 'identity.permission:Ver unidades')
+        ->middlewareFor('store', 'identity.permission:Crear unidades')
+        ->middlewareFor('update', 'identity.permission:Editar unidades');
 
-            Route::patch('{experiencia}', [
-                ExperienciaLaboralController::class, 'update'
-            ])->whereNumber('experiencia')
-                ->middleware('identity.permission:Gestionar experiencias laborales');
-
-            Route::delete('{experiencia}', [
-                ExperienciaLaboralController::class, 'destroy'
-            ])->whereNumber('experiencia')
-                ->middleware('identity.permission:Gestionar experiencias laborales');
-        });
-
-
-    Route::prefix('candidatos/mi-perfil/formaciones')
-        ->group(function () {
-
-            Route::get('/', [
-                FormacionAcademicaController::class, 'index'
-            ])->middleware('identity.permission:Ver perfil candidato');
-
-            Route::post('/', [
-                FormacionAcademicaController::class, 'store'
-            ])->middleware('identity.permission:Gestionar formaciones académicas');
-
-            Route::get('{formacion}', [
-                FormacionAcademicaController::class, 'show'
-            ])->whereNumber('formacion')
-                ->middleware('identity.permission:Ver perfil candidato');
-
-            Route::patch('{formacion}', [
-                FormacionAcademicaController::class, 'update'
-            ])->whereNumber('formacion')
-                ->middleware('identity.permission:Gestionar formaciones académicas');
-
-            Route::delete('{formacion}', [
-                FormacionAcademicaController::class, 'destroy'
-            ])->whereNumber('formacion')
-                ->middleware('identity.permission:Gestionar formaciones académicas');
-        });
 });

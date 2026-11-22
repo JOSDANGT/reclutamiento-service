@@ -51,6 +51,11 @@ class RolesPermisosSeeder extends Seeder
             'Eliminar roles',
             'Asignar roles',
             'Asignar permisos',
+
+            // Unidades
+            'Ver unidades',
+            'Crear unidades',
+            'Editar unidades',
         ];
 
         $permisosCandidatos = [

@@ -15,6 +15,9 @@ return new class extends Migration
             $table->text('descripcion')->nullable();
 
             $table->unsignedInteger('cantidad_plazas')->default(1);
+            $table->foreignId('unidad_id')
+                ->nullable()
+                ->constrained('dbreclutamiento.unidades');
 
             $table->decimal('salario_minimo', 12, 2)->nullable();
             $table->decimal('salario_maximo', 12, 2)->nullable();
