@@ -8,31 +8,34 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::connection('sqlsrv')
-            ->create('dbreclutamiento.postulacion_requisitos', function (Blueprint $table) {
-                $table->id();
+        Schema::create('dbreclutamiento.postulacion_requisitos', function (Blueprint $table) {
+            $table->id();
 
-                $table->unsignedBigInteger('postulacion_id');
-                $table->unsignedBigInteger('requisito_id');
+            $table->foreignId('postulacion_id')
+                ->constrained('dbreclutamiento.postulaciones');
 
-                $table->boolean('cumple')->nullable();
-                $table->string('observacion', 500)->nullable();
+            $table->foreignId('requisito_id')
+                ->constrained('dbreclutamiento.vacantes_has_requisitos');
 
-                $table->unsignedBigInteger('evaluado_por')->nullable();
-                $table->dateTime('evaluado_at')->nullable();
+            $table->boolean('cumple')->nullable();
+            $table->string('observacion', 500)->nullable();
 
-                $table->timestamps();
+            $table->foreignId('evaluado_por')
+                ->nullable();
 
-                $table->unique([
-                    'postulacion_id',
-                    'requisito_id',
-                ], 'postulacion_requisito_unique');
-            });
+            $table->dateTime('evaluado_at')->nullable();
+
+            $table->timestamps();
+
+            $table->unique(
+                ['postulacion_id', 'requisito_id'],
+                'postulacion_requisito_unique'
+            );
+        });
     }
 
     public function down(): void
     {
-        Schema::connection('sqlsrv')
-            ->dropIfExists('dbreclutamiento.postulacion_requisitos');
+        Schema::dropIfExists('dbreclutamiento.postulacion_requisitos');
     }
 };
