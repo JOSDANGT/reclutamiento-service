@@ -71,10 +71,8 @@ class CandidatoHabilidadService
     /**
      * Asociar una habilidad al perfil.
      */
-    public function asociar(
-        int $usuarioId,
-        array $datos
-    ): Collection {
+    public function asociar(int $usuarioId, array $datos): Collection {
+
         return DB::connection('sqlsrv')->transaction(
             function () use ($usuarioId, $datos) {
 
@@ -130,11 +128,8 @@ class CandidatoHabilidadService
     /**
      * Actualizar nivel y años de experiencia.
      */
-    public function actualizar(
-        int $usuarioId,
-        int $habilidadId,
-        array $datos
-    ): Collection {
+    public function actualizar(int $usuarioId, int $habilidadId, array $datos): Collection {
+
         return DB::connection('sqlsrv')->transaction(
             function () use ($usuarioId, $habilidadId, $datos) {
 
@@ -196,10 +191,7 @@ class CandidatoHabilidadService
     /**
      * Quitar una habilidad del perfil.
      */
-    public function eliminar(
-        int $usuarioId,
-        int $habilidadId
-    ): void {
+    public function eliminar(int $usuarioId, int $habilidadId): void {
         DB::connection('sqlsrv')->transaction(
             function () use ($usuarioId, $habilidadId) {
 

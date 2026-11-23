@@ -30,9 +30,7 @@ class HabilidadCategoriaController extends Controller
         ]);
     }
 
-    public function store(
-        StoreHabilidadCategoriaRequest $request
-    ): JsonResponse {
+    public function store(StoreHabilidadCategoriaRequest $request): JsonResponse {
         $categoria = $this->service->crear($request->validated());
 
         return response()->json([

@@ -20,7 +20,7 @@ class CandidatoHabilidadController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $usuarioId = (int) $request->attributes->get('identity_user_id');
+        $usuarioId = auth()->id();
 
         $habilidades = $this->service->listar($usuarioId);
 
@@ -34,9 +34,7 @@ class CandidatoHabilidadController extends Controller
      * Asociar una habilidad al perfil del candidato.
      */
     public function store(AsociarHabilidadRequest $request): JsonResponse {
-        $usuarioId = (int) $request->attributes->get(
-            'identity_user_id'
-        );
+        $usuarioId = auth()->id();
 
         $habilidades = $this->service->asociar(
             $usuarioId,
@@ -53,13 +51,8 @@ class CandidatoHabilidadController extends Controller
     /**
      * Actualizar el nivel y los años de experiencia.
      */
-    public function update(
-        UpdateCandidatoHabilidadRequest $request,
-        int $habilidad
-    ): JsonResponse {
-        $usuarioId = (int) $request->attributes->get(
-            'identity_user_id'
-        );
+    public function update(UpdateCandidatoHabilidadRequest $request, int $habilidad): JsonResponse {
+        $usuarioId = auth()->id();
 
         $habilidades = $this->service->actualizar(
             $usuarioId,
@@ -77,13 +70,8 @@ class CandidatoHabilidadController extends Controller
     /**
      * Desasociar una habilidad del perfil del candidato.
      */
-    public function destroy(
-        Request $request,
-        int $habilidad
-    ): JsonResponse {
-        $usuarioId = (int) $request->attributes->get(
-            'identity_user_id'
-        );
+    public function destroy(Request $request, int $habilidad): JsonResponse {
+        $usuarioId = auth()->id();
 
         $this->service->eliminar(
             $usuarioId,

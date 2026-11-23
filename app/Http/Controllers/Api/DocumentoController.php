@@ -27,7 +27,7 @@ class DocumentoController extends Controller
 
     private function obtenerCandidato(Request $request): Candidato
     {
-        $usuarioId = $request->attributes->get('identity_user_id');
+        $usuarioId = auth()->id();
 
         if (!$usuarioId) {
             throw ValidationException::withMessages([
@@ -94,7 +94,7 @@ class DocumentoController extends Controller
         DB::beginTransaction();
 
         try {
-            // El servidor decide dónde almacenar el archivo.
+
             $ruta = $archivo->store(
                 "candidatos/{$candidato->id}/documentos",
                 $disco
@@ -106,7 +106,6 @@ class DocumentoController extends Controller
                 );
             }
 
-            // Solo puede existir un documento principal por candidato.
             if ($esPrincipal) {
                 $candidato->documentos()
                     ->where('es_principal', true)
@@ -135,7 +134,7 @@ class DocumentoController extends Controller
                     'tipo_documento' => $documento->tipo_documento,
                     'es_principal' => $documento->es_principal,
                 ],
-                'usuario_id' => (int) $request->attributes->get('identity_user_id'),
+                'usuario_id' => auth()->id(),
             ]);
 
             DB::commit();
@@ -156,10 +155,7 @@ class DocumentoController extends Controller
         }
     }
 
-    public function show(
-        Request $request,
-        Documento $documento
-    ): BinaryFileResponse {
+    public function show(Request $request, Documento $documento): BinaryFileResponse {
         $candidato = $this->obtenerCandidato($request);
 
         $documento = $candidato->documentos()
@@ -181,10 +177,7 @@ class DocumentoController extends Controller
         );
     }
 
-    public function destroy(
-        Request $request,
-        Documento $documento
-    ): JsonResponse {
+    public function destroy(Request $request, Documento $documento): JsonResponse {
         $candidato = $this->obtenerCandidato($request);
 
         DB::beginTransaction();

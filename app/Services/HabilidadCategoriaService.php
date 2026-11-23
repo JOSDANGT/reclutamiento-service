@@ -35,10 +35,7 @@ class HabilidadCategoriaService
         return HabilidadCategoria::create($datos);
     }
 
-    public function actualizar(
-        HabilidadCategoria $categoria,
-        array $datos
-    ): HabilidadCategoria {
+    public function actualizar(HabilidadCategoria $categoria, array $datos): HabilidadCategoria {
         $categoria->update($datos);
 
         return $categoria->refresh();

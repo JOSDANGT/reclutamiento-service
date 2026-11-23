@@ -243,15 +243,12 @@ Route::middleware('auth:sanctum')->group(function () {
         ->whereNumber('postulacion')
         ->middleware('identity.permission:Gestionar postulaciones');
 
-    Route::put('postulaciones/{postulacion}/oferta', [
-        PostulacionController::class,
-        'registrarDecisionOferta',
-    ])
+    Route::put('postulaciones/oferta/{postulacion}', [PostulacionController::class, 'registrarDecisionOferta',])
         ->whereNumber('postulacion')
         ->middleware('identity.permission:Gestionar postulaciones');
 
 
-    Route::get('postulaciones/{postulacion}/documentos/{documento}', [PostulacionController::class, 'verDocumento'])
+    Route::get('postulaciones/documentos/{postulacion}/{documento}', [PostulacionController::class, 'verDocumento'])
         ->whereNumber('postulacion')
         ->whereNumber('documento')
         ->middleware('identity.permission:Ver postulaciones');

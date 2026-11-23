@@ -178,7 +178,8 @@ class PostulacionController extends Controller
         ]);
     }
 
-    public function retirar(Request $request, Postulacion $postulacion): JsonResponse {
+    public function retirar(Request $request, Postulacion $postulacion): JsonResponse
+    {
         $usuario = Auth::user();
 
         if (!$usuario) {
@@ -205,46 +206,34 @@ class PostulacionController extends Controller
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            $postulacion->load('estado');
+            $estadosPermitidos = [
+                PostulacionEstado::RECIBIDA,
+                PostulacionEstado::EN_REVISION,
+                PostulacionEstado::ENTREVISTA,
+            ];
 
-            $estadoActual = mb_strtoupper(
-                trim($postulacion->estado?->nombre ?? '')
-            );
-
-            if (in_array($estadoActual, [
-                'RETIRADA',
-                'RECHAZADA',
-                'SELECCIONADA',
-            ], true)) {
+            if (!in_array((int) $postulacion->estado_id, $estadosPermitidos, true)) {
                 throw ValidationException::withMessages([
                     'postulacion' => 'Esta postulación ya no puede retirarse.',
                 ]);
             }
 
-            $estadoRetirada = PostulacionEstado::query()
-                ->where('nombre', 'RETIRADA')
-                ->first();
-
-            if (!$estadoRetirada) {
-                throw ValidationException::withMessages([
-                    'estado' => 'No se encuentra configurado el estado RETIRADA.',
-                ]);
-            }
-
             $postulacion->update([
-                'estado_id' => $estadoRetirada->id,
+                'estado_id' => PostulacionEstado::RETIRADA,
             ]);
+
+            $postulacion->load('estado');
 
             DB::commit();
 
+
             return response()->json([
                 'message' => 'Postulación retirada correctamente.',
-                'data' => $postulacion->fresh(['estado']),
+                'data' => $postulacion,
             ]);
 
         } catch (Throwable $e) {
             DB::rollBack();
-
             throw $e;
         }
     }
@@ -260,19 +249,13 @@ class PostulacionController extends Controller
         ]);
     }
 
-    public function cambiarEstado(Request $request, Postulacion $postulacion): JsonResponse {
+    public function cambiarEstado(Request $request, Postulacion $postulacion): JsonResponse
+    {
         $datos = $request->validate([
-            'estado_id' => [
-                'required',
-                'integer',
-                Rule::exists('sqlsrv.dbreclutamiento.postulacion_estados', 'id'),
-            ],
-            'observaciones' => [
-                'nullable',
-                'string',
-                'max:5000',
-            ],
+            'estado_id' => ['required', 'integer',],
+            'observaciones' => ['nullable', 'string', 'max:5000'],
         ]);
+        $estadoNuevoId = (int)$datos['estado_id'];
 
         DB::beginTransaction();
 
@@ -282,42 +265,24 @@ class PostulacionController extends Controller
                 ->lockForUpdate()
                 ->firstOrFail();
 
-            $estadoAnterior = $postulacion->estado_id;
-
-            if ((int) $estadoAnterior === (int) $datos['estado_id']) {
-                throw ValidationException::withMessages([
-                    'estado_id' => 'La postulación ya tiene ese estado.',
-                ]);
-            }
-
-            $estadoNuevo = PostulacionEstado::findOrFail(
-                $datos['estado_id']
-            );
-
-            if (mb_strtoupper(trim($estadoNuevo->nombre)) === 'RETIRADA') {
-                throw ValidationException::withMessages([
-                    'estado_id' => 'El retiro debe realizarlo el candidato.',
-                ]);
-            }
 
             $postulacion->update([
-                'estado_id' => $estadoNuevo->id,
-                'observaciones' => $datos['observaciones']
-                    ?? $postulacion->observaciones,
-                'revisado_por' => Auth::id(),
+                'estado_id' => $estadoNuevoId,
+                'observaciones' => $datos['observaciones'] ?? $postulacion->observaciones,
+                'revisado_por' => auth()->id(),
                 'fecha_revision' => now(),
             ]);
 
+            $postulacion->load(['estado', 'candidato', 'vacante']);
+
             DB::commit();
+
 
             return response()->json([
                 'message' => 'Estado actualizado correctamente.',
-                'data' => $postulacion->fresh([
-                    'estado',
-                    'candidato',
-                    'vacante',
-                ]),
+                'data' => $postulacion,
             ]);
+
         } catch (Throwable $e) {
             DB::rollBack();
             throw $e;
@@ -327,8 +292,7 @@ class PostulacionController extends Controller
 
 
     public function verDocumento(Postulacion $postulacion, Documento $documento): BinaryFileResponse {
-        // El documento debe pertenecer al candidato
-        // de la postulación que está revisando RR. HH.
+
         $documento = $postulacion->candidato
             ->documentos()
             ->findOrFail($documento->id);
@@ -364,76 +328,71 @@ class PostulacionController extends Controller
             'observaciones' => ['nullable', 'string', 'max:5000'],
         ]);
 
-        $usuarioId = (int) $request->attributes->get('identity_user_id');
+        DB::beginTransaction();
 
-        abort_if($usuarioId < 1, 401, 'No se identificó al usuario.');
-
-        return DB::transaction(function () use ($postulacion, $datos, $usuarioId, $bitacoraService) {
+        try {
             $postulacion = Postulacion::query()
                 ->with('estado')
                 ->lockForUpdate()
-                ->findOrFail($postulacion->getKey());
+                ->findOrFail($postulacion->id);
 
-            $estadoAnterior = $postulacion->estado;
-
-            if (mb_strtoupper(trim($estadoAnterior?->nombre ?? '')) !== 'SELECCIONADA') {
+            if ((int) $postulacion->estado_id !== PostulacionEstado::SELECCIONADA) {
                 throw ValidationException::withMessages([
-                    'postulacion' => 'Solo puedes registrar la decisión de oferta de una postulación seleccionada.',
-                ]);
-            }
-
-            $aceptada = $datos['decision'] === 'ACEPTADA';
-            $nombreEstado = $aceptada ? 'CONTRATADA' : 'OFERTA RECHAZADA';
-
-            $estadoFinal = $postulacion->estado()
-                ->getRelated()
-                ->newQuery()
-                ->where('nombre', $nombreEstado)
-                ->first();
-
-            if (!$estadoFinal) {
-                throw ValidationException::withMessages([
-                    'estado' => "El estado {$nombreEstado} aún no existe en el catálogo.",
+                    'postulacion' => 'La postulación debe estar seleccionada para registrar la decisión de oferta.',
                 ]);
             }
 
             $anteriores = [
-                'estado_id' => $estadoAnterior->getKey(),
-                'estado' => $estadoAnterior->nombre,
+                'estado_id' => $postulacion->estado_id,
+                'estado' => $postulacion->estado->nombre,
                 'fecha_ingreso' => $postulacion->fecha_ingreso,
             ];
 
-            $postulacion->estado()->associate($estadoFinal);
-            $postulacion->fecha_ingreso = $datos['fecha_ingreso'] ?? null;
-            $postulacion->save();
+            if ($datos['decision'] === 'ACEPTADA') {
+                $postulacion->estado_id = PostulacionEstado::CONTRATADA;
+                $postulacion->fecha_ingreso = $datos['fecha_ingreso'];
 
-            $mensaje = $aceptada
-                ? 'Contratación confirmada.'
-                : 'Rechazo de oferta registrado.';
+                $accion = 'CONTRATACION_CONFIRMADA';
+                $mensaje = 'Contratación confirmada.';
+            } else {
+                $postulacion->estado_id = PostulacionEstado::OFERTA_RECHAZADA;
+                $postulacion->fecha_ingreso = null;
+
+                $accion = 'OFERTA RECHAZADA';
+                $mensaje = 'Rechazo de oferta registrado.';
+            }
+
+            $postulacion->save();
+            $postulacion->load('estado');
 
             $bitacoraService->registrar(
                 $postulacion,
-                $aceptada ? 'CONTRATACION_CONFIRMADA' : 'OFERTA RECHAZADA',
+                $accion,
                 $mensaje,
                 $anteriores,
                 [
-                    'estado_id' => $estadoFinal->getKey(),
-                    'estado' => $estadoFinal->nombre,
+                    'estado_id' => $postulacion->estado_id,
+                    'estado' => $postulacion->estado->nombre,
                     'fecha_ingreso' => $postulacion->fecha_ingreso,
                     'observaciones' => $datos['observaciones'] ?? null,
                 ],
-                $usuarioId
+                auth()->id()
             );
 
-            return response()->json([
-                'message' => $mensaje,
-                'data' => [
-                    'postulacion_id' => $postulacion->getKey(),
-                    'estado' => $estadoFinal->nombre,
-                    'fecha_ingreso' => $postulacion->fecha_ingreso,
-                ],
-            ]);
-        });
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            throw $e;
+        }
+
+        return response()->json([
+            'message' => $mensaje,
+            'data' => [
+                'postulacion_id' => $postulacion->id,
+                'estado' => $postulacion->estado->nombre,
+                'fecha_ingreso' => $postulacion->fecha_ingreso,
+            ],
+        ]);
     }
 
 

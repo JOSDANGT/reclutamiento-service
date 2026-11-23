@@ -17,9 +17,7 @@ class ExperienciaLaboralController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $usuarioId = (int) $request->attributes->get(
-            'identity_user_id'
-        );
+        $usuarioId = auth()->id();
 
         return response()->json([
             'success' => true,
@@ -28,9 +26,7 @@ class ExperienciaLaboralController extends Controller
     }
 
     public function show(Request $request, int $experiencia): JsonResponse {
-        $usuarioId = (int) $request->attributes->get(
-            'identity_user_id'
-        );
+        $usuarioId = auth()->id();
 
         return response()->json([
             'success' => true,
@@ -44,9 +40,7 @@ class ExperienciaLaboralController extends Controller
     public function store(
         StoreExperienciaLaboralRequest $request
     ): JsonResponse {
-        $usuarioId = (int) $request->attributes->get(
-            'identity_user_id'
-        );
+        $usuarioId = auth()->id();
 
         $experiencia = $this->service->crear(
             $usuarioId,
@@ -61,9 +55,7 @@ class ExperienciaLaboralController extends Controller
     }
 
     public function update(UpdateExperienciaLaboralRequest $request, int $experiencia): JsonResponse {
-        $usuarioId = (int) $request->attributes->get(
-            'identity_user_id'
-        );
+        $usuarioId = auth()->id();
 
         $resultado = $this->service->actualizar(
             $usuarioId,
@@ -82,9 +74,7 @@ class ExperienciaLaboralController extends Controller
         Request $request,
         int $experiencia
     ): JsonResponse {
-        $usuarioId = (int) $request->attributes->get(
-            'identity_user_id'
-        );
+        $usuarioId = auth()->id();
 
         $this->service->eliminar(
             $usuarioId,

@@ -399,9 +399,7 @@ class AgendaController extends Controller
             ->lockForUpdate()
             ->firstOrFail();
 
-        $estado = mb_strtoupper(trim($postulacion->estado?->nombre ?? ''));
-
-        if ($estado !== 'ENTREVISTA') {
+        if ($postulacion->estado?->id !== PostulacionEstado::ENTREVISTA) {
             throw ValidationException::withMessages([
                 'postulacion' => 'La postulación debe encontrarse en entrevista.',
             ]);
@@ -531,13 +529,8 @@ class AgendaController extends Controller
         }
     }
 
-    private function actualizarConBitacora(
-        Agenda $agenda,
-        array $cambios,
-        string $accion,
-        string $descripcion,
-        int $usuarioId
-    ): void {
+    private function actualizarConBitacora(Agenda $agenda, array $cambios, string $accion, string $descripcion, int $usuarioId): void
+    {
         $campos = array_keys($cambios);
         $anteriores = $agenda->only($campos);
 
@@ -555,11 +548,7 @@ class AgendaController extends Controller
         );
     }
 
-    private function respuestaAgenda(
-        Agenda $agenda,
-        string $mensaje,
-        int $status = 200
-    ): JsonResponse {
+    private function respuestaAgenda(Agenda $agenda, string $mensaje, int $status = 200): JsonResponse {
         return response()->json([
             'message' => $mensaje,
             'data' => $agenda->load('responsable'),

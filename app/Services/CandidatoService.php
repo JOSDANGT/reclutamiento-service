@@ -57,10 +57,8 @@ class CandidatoService
             ->first();
     }
 
-    public function actualizar(
-        array $datos,
-        int $usuarioId
-    ): Candidato {
+    public function actualizar(array $datos, int $usuarioId): Candidato {
+
         return DB::connection('sqlsrv')->transaction(
             function () use ($datos, $usuarioId) {
 

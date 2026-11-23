@@ -16,9 +16,7 @@ class CandidatoController extends Controller
     ) {}
 
     public function store(StoreCandidatoRequest $request): JsonResponse {
-        $usuarioId = (int) $request->attributes->get(
-            'identity_user_id'
-        );
+        $usuarioId = auth()->id();
 
         $candidato = $this->candidatoService->crear(
             $request->validated(),
@@ -34,9 +32,7 @@ class CandidatoController extends Controller
 
     public function miPerfil(Request $request): JsonResponse
     {
-        $usuarioId = (int) $request->attributes->get(
-            'identity_user_id'
-        );
+        $usuarioId = auth()->id();
 
         $candidato = $this->candidatoService->miPerfil(
             $usuarioId
@@ -55,12 +51,8 @@ class CandidatoController extends Controller
         ]);
     }
 
-    public function update(
-        UpdateCandidatoRequest $request
-    ): JsonResponse {
-        $usuarioId = (int) $request->attributes->get(
-            'identity_user_id'
-        );
+    public function update(UpdateCandidatoRequest $request): JsonResponse {
+        $usuarioId = auth()->id();
 
         $candidato = $this->candidatoService->actualizar(
             $request->validated(),
@@ -81,9 +73,7 @@ class CandidatoController extends Controller
             'estado' => ['nullable', 'boolean'],
         ]);
 
-        $candidatos = $this->candidatoService->listar(
-            $filtros
-        );
+        $candidatos = $this->candidatoService->listar($filtros);
 
         return response()->json([
             'success' => true,

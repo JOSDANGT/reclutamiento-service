@@ -60,10 +60,7 @@ class FormacionAcademicaController extends Controller
         ], 201);
     }
 
-    public function update(
-        UpdateFormacionAcademicaRequest $request,
-        int $formacion
-    ): JsonResponse {
+    public function update(UpdateFormacionAcademicaRequest $request, int $formacion): JsonResponse {
         $usuarioId = (int) $request->attributes
             ->get('identity_user_id');
 

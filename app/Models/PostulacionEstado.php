@@ -21,6 +21,7 @@ class PostulacionEstado extends Model
     const RECHAZADA = 5;
     const RETIRADA = 6;
     const CONTRATADA = 7;
+    const OFERTA_RECHAZADA = 8;
 
 
     protected $fillable = [
