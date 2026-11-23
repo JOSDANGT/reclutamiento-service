@@ -97,11 +97,7 @@ class VacanteService
         }
     }
 
-    public function actualizar(
-        Vacante $vacante,
-        array $data,
-        ?int $usuarioId = null
-    ): Vacante {
+    public function actualizar(Vacante $vacante, array $data, ?int $usuarioId = null): Vacante {
         DB::beginTransaction();
 
         try {
@@ -110,10 +106,8 @@ class VacanteService
 
             unset($data['requisitos'], $data['creado_por']);
 
-            // Asignar valores sin guardarlos.
             $vacante->fill($data);
 
-            // Obtener únicamente los campos modificados.
             $cambios = $vacante->getDirty();
 
             $anteriores = [];
@@ -128,7 +122,6 @@ class VacanteService
                 $vacante->save();
             }
 
-            // Actualizar requisitos únicamente si se enviaron.
             if ($actualizarRequisitos) {
                 $requisitosAnteriores = $this->obtenerResumenRequisitos(
                     $vacante
@@ -154,7 +147,6 @@ class VacanteService
                 }
             }
 
-            // Registrar bitácora solo cuando existan cambios reales.
             if (!empty($anteriores) || !empty($nuevos)) {
                 $this->registrarBitacora(
                     $vacante,

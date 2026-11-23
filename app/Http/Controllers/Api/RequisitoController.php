@@ -52,9 +52,7 @@ class RequisitoController extends Controller
         ]);
     }
 
-    public function store(
-        StoreRequisitoRequest $request
-    ): JsonResponse {
+    public function store(StoreRequisitoRequest $request): JsonResponse {
         $data = $request->validated();
         $data['estado'] = $data['estado'] ?? true;
 
@@ -75,10 +73,7 @@ class RequisitoController extends Controller
         ]);
     }
 
-    public function update(
-        UpdateRequisitoRequest $request,
-        Requisito $requisito
-    ): JsonResponse {
+    public function update(UpdateRequisitoRequest $request, Requisito $requisito): JsonResponse {
         $requisito->update($request->validated());
 
         return response()->json([

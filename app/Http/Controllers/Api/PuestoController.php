@@ -26,11 +26,9 @@ class PuestoController extends Controller
 
     public function requisitos(Puesto $puesto): JsonResponse
     {
-        abort_unless($puesto->estado, 404);
-
         $requisitos = $puesto->requisitos()
             ->with('tipoRequisito')
-            ->where('dbreclutamiento.requisitos.estado', true)
+            ->where('estado', true)
             ->orderByPivot('orden')
             ->get();
 

@@ -96,7 +96,7 @@ class PostulacionController extends Controller
 
     public function store(StorePostulacionRequest $request): JsonResponse
     {
-        $usuarioId = $request->attributes->get('identity_user_id');
+        $usuarioId = auth()->id();
 
         if (!$usuarioId) {
             return response()->json([
