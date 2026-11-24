@@ -16,7 +16,7 @@ class PostulacionService
     {
         $query = Postulacion::query()
             ->with([
-                'candidato',
+                'candidato.usuario',
                 'vacante.puesto.unidad',
                 'estado',
             ]);
@@ -47,6 +47,7 @@ class PostulacionService
     public function obtener(Postulacion $postulacion): Postulacion
     {
         return $postulacion->load([
+            'candidato.usuario',
             'candidato.habilidades',
             'candidato.experienciasLaborales',
             'candidato.formacionesAcademicas',
